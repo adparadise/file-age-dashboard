@@ -13,9 +13,6 @@ this_file_home = os.path.dirname(this_file_path)
 project_home = os.path.join(this_file_home, '..')
 project_home = os.path.abspath(project_home)
 sys.path.append(project_home)
-runtime_home =  os.path.join(this_file_home, '../../python-runtime/runtime')
-runtime_home =  os.path.abspath(runtime_home)
-sys.path.append(runtime_home)
 
 from runtime import Runtime
 from fileage import command

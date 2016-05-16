@@ -110,10 +110,10 @@ class CursesDashboard(object):
         self._stdscr = None
 
     def _setup_colors(self):
-        curses.init_pair(CursesDashboard.NO_INFO, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(CursesDashboard.NO_INFO, curses.COLOR_BLACK, curses.COLOR_RED)
         curses.init_pair(CursesDashboard.NEW, curses.COLOR_BLACK, curses.COLOR_GREEN)
         curses.init_pair(CursesDashboard.YOUNG, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-        curses.init_pair(CursesDashboard.OLD, curses.COLOR_BLACK, curses.COLOR_RED)
+        curses.init_pair(CursesDashboard.OLD, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     def _setup_cell_windows(self):
         min_cell_width = 20

@@ -29,6 +29,10 @@ class Watch:
     def register_services(runtime):
         pass
 
+    @staticmethod
+    def is_config_required():
+        return False
+
     def run(self, runtime):
         status = Status()
 

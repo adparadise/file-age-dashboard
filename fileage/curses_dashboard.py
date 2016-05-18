@@ -8,11 +8,14 @@ from curses import textpad
 import time
 import datetime
 
+import constants
+
 class CursesDashboard(object):
-    NO_INFO = 1
-    NEW = 2
-    YOUNG = 3
-    OLD = 4
+    NO_INFO_COLOR = 1
+    NEW_COLOR = 2
+    YOUNG_COLOR = 3
+    OLD_COLOR = 4
+    ERROR_COLOR = 5
 
     def __init__(self):
         self._stdscr = None
@@ -20,16 +23,14 @@ class CursesDashboard(object):
         self._cells = []
         self._status = None
 
-        self._long_sleep_duration = 2
+        self._long_sleep_duration = 0.7
         self._short_sleep_duration = 0.3
         self._short_sleep_period_seconds = 3
-        self._new_age_seconds = 2
-        self._young_age_seconds = 10
 
-    def add_cell(self, filename, title=None):
+    def add_cell(self, filename, label=None):
         cell = {
             'filename': filename,
-            'title': title or filename,
+            'label': label or filename,
             'window': None
         }
         self._cells.append(cell)
@@ -45,12 +46,6 @@ class CursesDashboard(object):
 
     def set_short_sleep_period_seconds(self, short_sleep_period_seconds):
         self._short_sleep_period_seconds = short_sleep_period_seconds
-
-    def set_new_age_seconds(self, new_age_seconds):
-        self._new_age_seconds = new_age_seconds
-
-    def set_young_age_seconds(self, young_age_seconds):
-        self._young_age_seconds = young_age_seconds
 
     def run(self):
         assert self._status, "no status helper object set."
@@ -110,10 +105,11 @@ class CursesDashboard(object):
         self._stdscr = None
 
     def _setup_colors(self):
-        curses.init_pair(CursesDashboard.NO_INFO, curses.COLOR_BLACK, curses.COLOR_RED)
-        curses.init_pair(CursesDashboard.NEW, curses.COLOR_BLACK, curses.COLOR_GREEN)
-        curses.init_pair(CursesDashboard.YOUNG, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-        curses.init_pair(CursesDashboard.OLD, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(CursesDashboard.NO_INFO_COLOR, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
+        curses.init_pair(CursesDashboard.NEW_COLOR, curses.COLOR_BLACK, curses.COLOR_GREEN)
+        curses.init_pair(CursesDashboard.YOUNG_COLOR, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        curses.init_pair(CursesDashboard.OLD_COLOR, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(CursesDashboard.ERROR_COLOR, curses.COLOR_BLACK, curses.COLOR_RED)
 
     def _setup_cell_windows(self):
         min_cell_width = 20
@@ -131,7 +127,7 @@ class CursesDashboard(object):
             cell['width'] = cell_width
             cell['row'] = int(math.floor(index / cells_per_row) * cell_height)
             cell['col'] = (index % cells_per_row) * cell_width
-            cell['state'] = CursesDashboard.NO_INFO
+            cell['state'] = CursesDashboard.NO_INFO_COLOR
             win = self._stdscr.subwin(cell['height'], cell['width'], cell['row'], cell['col'])
             cell['window'] = win
 
@@ -148,17 +144,20 @@ class CursesDashboard(object):
         statuses = self._status.get_statuses()
         any_changes = False
         for cell in self._cells:
-            state = CursesDashboard.NO_INFO
             filename = cell['filename']
+            state = CursesDashboard.NO_INFO_COLOR
             if filename in statuses:
                 status = statuses[filename]
-                if status['any_info']:
-                    if status['age_seconds'] < self._new_age_seconds:
-                        state = CursesDashboard.NEW
-                    elif status['age_seconds'] < self._young_age_seconds:
-                        state = CursesDashboard.YOUNG
-                    else:
-                        state = CursesDashboard.OLD
+                if status['state'] == constants.States.NO_INFO:
+                    state = CursesDashboard.NO_INFO_COLOR
+                elif status['state'] == constants.States.NEW:
+                    state = CursesDashboard.NEW_COLOR
+                elif status['state'] == constants.States.YOUNG:
+                    state = CursesDashboard.YOUNG_COLOR
+                elif status['state'] == constants.States.OLD:
+                    state = CursesDashboard.OLD_COLOR
+                elif status['state'] == constants.States.ERROR:
+                    state = CursesDashboard.ERROR_COLOR
 
             if cell['state'] != state:
                 any_changes = True
@@ -172,10 +171,15 @@ class CursesDashboard(object):
             self._stdscr.addstr(0, 0, "No cells added to dashboard... nothing to display.", 0)
 
         for index, cell in enumerate(self._cells):
-            cell['window'].addstr(0, 0, cell['title'], cell['state'])
+            linenum = 0
+            cell['window'].addstr(linenum, 0, cell['label'], cell['state'])
+            linenum += 1
+            if cell['label'] != cell['filename']:
+                cell['window'].addstr(linenum, 0, cell['filename'], cell['state'])
+                linenum += 1
             if index == 0:
                 now = datetime.datetime.now()
-                cell['window'].addstr(1, 0, now.isoformat(), cell['state'])
+                cell['window'].addstr(linenum, 0, now.isoformat(), cell['state'])
             self._fill_cell(cell)
             cell['window'].refresh()
 

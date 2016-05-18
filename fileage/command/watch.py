@@ -1,6 +1,8 @@
 import argparse
-import requests
 import json
+import os
+import re
+import requests
 import time
 
 from runtime import Log
@@ -9,6 +11,7 @@ from fileage import Status
 
 class Watch:
     SCRIPT_ABBREV = 'dash'
+    CONFIG_SECTION_NAME = 'fileage'
 
     def __init__(self):
         self._dashboard = None
@@ -20,7 +23,6 @@ class Watch:
         arg_parser.add_argument('-f',
                                 dest='filenames',
                                 action='append',
-                                required=True,
                                 help='filenames to watch')
 
         return arg_parser
@@ -38,30 +40,78 @@ class Watch:
 
         self._dashboard = CursesDashboard()
         self._dashboard.set_status(status)
-        if runtime.config.has_option('fileage', 'long_sleep_duration'):
-            long_sleep_duration = float(runtime.config.get('fileage', 'long_sleep_duration'))
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'long_sleep_duration'):
+            long_sleep_duration = float(runtime.config.get(Watch.CONFIG_SECTION_NAME, 'long_sleep_duration'))
             self._dashboard.set_long_sleep_duration(long_sleep_duration)
-        if runtime.config.has_option('fileage', 'short_sleep_duration'):
-            short_sleep_duration = float(runtime.config.get('fileage', 'short_sleep_duration'))
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'short_sleep_duration'):
+            short_sleep_duration = float(runtime.config.get(Watch.CONFIG_SECTION_NAME, 'short_sleep_duration'))
             self._dashboard.set_short_sleep_duration(short_sleep_duration)
-        if runtime.config.has_option('fileage', 'short_sleep_period_seconds'):
-            short_sleep_period_seconds = float(runtime.config.get('fileage', 'short_sleep_period_seconds'))
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'short_sleep_period_seconds'):
+            short_sleep_period_seconds = float(runtime.config.get(Watch.CONFIG_SECTION_NAME, 'short_sleep_period_seconds'))
             self._dashboard.set_short_sleep_period_seconds(short_sleep_period_seconds)
-        if runtime.config.has_option('fileage', 'new_age_seconds'):
-            new_age_seconds = float(runtime.config.get('fileage', 'new_age_seconds'))
-            self._dashboard.set_new_age_seconds(new_age_seconds)
-        if runtime.config.has_option('fileage', 'young_age_seconds'):
-            young_age_seconds = float(runtime.config.get('fileage', 'young_age_seconds'))
-            self._dashboard.set_young_age_seconds(young_age_seconds)
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'new_age_seconds'):
+            new_age_seconds = float(runtime.config.get(Watch.CONFIG_SECTION_NAME, 'new_age_seconds'))
+            status.set_new_age_seconds(new_age_seconds)
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'young_age_seconds'):
+            young_age_seconds = float(runtime.config.get(Watch.CONFIG_SECTION_NAME, 'young_age_seconds'))
+            status.set_young_age_seconds(young_age_seconds)
 
-        print runtime.options.filenames
-        for filename in runtime.options.filenames:
-            status.add_filename(filename)
-            self._dashboard.add_cell(filename)
+        watch_files = self._extract_watch_files(runtime)
+
+        for watch_file in watch_files:
+            status.add_filename(watch_file['filename'], watch_file['success_pattern_string'])
+            self._dashboard.add_cell(watch_file['filename'], watch_file['label'])
 
         if runtime.options.log_level == Log.LEVEL_DEBUG:
+            runtime.log.debug(json.dumps(watch_files, indent=2),
+                              prefix="WATCH_FILES")
             statuses = status.get_statuses()
             runtime.log.debug(json.dumps(statuses, indent=2),
                               prefix="STATUS")
         else:
             self._dashboard.run()
+
+
+    def _extract_watch_files(self, runtime):
+        filename_pattern = re.compile('^(.*)-filename$')
+        absolute_path_pattern = re.compile('^/')
+
+        global_success_pattern = None
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'global_success_pattern'):
+            global_success_pattern = runtime.config.get(Watch.CONFIG_SECTION_NAME, 'global_success_pattern')
+
+        filename_prefix = None
+        if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'filename_prefix'):
+            filename_prefix = runtime.config.get(Watch.CONFIG_SECTION_NAME, 'filename_prefix')
+
+        watch_files = []
+        for key, value in runtime.config.each_in_section(Watch.CONFIG_SECTION_NAME):
+            match = filename_pattern.match(key)
+            if match:
+                label = match.group(1)
+                filename = value
+                success_pattern_string = None
+                success_pattern_key = '%s-success-pattern' % label
+                if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, success_pattern_key):
+                    success_pattern_string = runtime.config.get(Watch.CONFIG_SECTION_NAME, success_pattern_key)
+
+                watch_files.append({
+                    'label': label,
+                    'filename': filename,
+                    'success_pattern_string': success_pattern_string
+                })
+
+        if runtime.options.filenames:
+            for filename in runtime.options.filenames:
+                watch_files.append({
+                    'label': filename,
+                    'filename': filename,
+                    'success_pattern_string': None
+                })
+
+        if filename_prefix:
+            for watch_file in watch_files:
+                if not absolute_path_pattern.match(watch_file['filename']):
+                    watch_file['filename'] = os.path.join(filename_prefix, watch_file['filename'])
+
+        return watch_files

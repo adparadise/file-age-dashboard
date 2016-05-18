@@ -79,6 +79,16 @@ class Config:
         """
         return self.config and self.config.has_section(section_name)
 
+    def each_in_section(self, section_name):
+        """
+        Generator iterating over all key/value pairs in a section.
+        """
+        if not self.has_section(section_name):
+            return
+
+        for key, value in self.config.items(section_name):
+            yield(key, value)
+
     def to_string(self):
         buf = StringIO.StringIO()
         self.config.write(buf)

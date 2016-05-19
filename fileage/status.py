@@ -33,16 +33,16 @@ class Status(object):
         now = time.time()
         for filename in self._filenames:
             status = {
-                'any_info': False,
-                'age_seconds': None,
-                'is_success': None
+                'any-info': False,
+                'age-seconds': None,
+                'is-success': None
             }
 
             if os.path.exists(filename):
                 stat = os.stat(filename);
-                status['any_info'] = True
-                status['age_seconds'] = now - stat.st_mtime
-                status['is_success'] = self._file_is_success(filename)
+                status['any-info'] = True
+                status['age-seconds'] = now - stat.st_mtime
+                status['is-success'] = self._file_is_success(filename)
 
             self._compute_status_code(status)
 
@@ -52,14 +52,14 @@ class Status(object):
 
     def _compute_status_code(self, status):
         state = constants.States.NO_INFO
-        if not status['any_info']:
+        if not status['any-info']:
             state = constants.States.NO_INFO
-        elif not status['is_success']:
+        elif not status['is-success']:
             state = constants.States.ERROR
         else:
-            if status['age_seconds'] < self._new_age_seconds:
+            if status['age-seconds'] < self._new_age_seconds:
                 state = constants.States.NEW
-            elif status['age_seconds'] < self._young_age_seconds:
+            elif status['age-seconds'] < self._young_age_seconds:
                 state = constants.States.YOUNG
             else:
                 state = constants.States.OLD

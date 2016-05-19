@@ -35,17 +35,19 @@ class Config:
         """
         Read the configuration options present on disk.
         """
+        config_filenames = []
+
+        default_config_file_path = self.config_file_path('default')
+        if os.path.isfile(default_config_file_path):
+            config_filenames.append(default_config_file_path)
+
         env_config_file_path = self.config_file_path()
         if not os.path.isfile(env_config_file_path):
             raise Exception('no config found: %s' % env_config_file_path)
-
-        default_config_file_path = self.config_file_path('default')
-        if not os.path.isfile(default_config_file_path):
-            message_pattern = 'no default configuration found: %s'
-            raise Exception(message_pattern % default_config_file_path)
+        config_filenames.append(env_config_file_path)
 
         self.config = ConfigParser.RawConfigParser()
-        self.config.read([default_config_file_path, env_config_file_path])
+        self.config.read(config_filenames)
 
         return self
 

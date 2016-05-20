@@ -10,7 +10,9 @@ tools such as `Webpack` or `grunt watch`. You might leave this peeking
 out behind your browser, letting you know when a new build is done and
 whether it failed.
 
-Tested on OSX 10.11, El Capitan.
+Tested on OSX 10.11, El Capitan, Python version 2.7. Depends upon
+[argparse](https://pypi.python.org/pypi/argparse), which is provided
+in Python >= 2.7 and >= 3.2.
 
 ## Usage
 
@@ -90,7 +92,7 @@ where:
     <dd>regexp defining success for the same <code>&lt;label&gt;</code>'s filename.</dd>
 
     <dt><code>filename-prefix</code></dt>
-    <dd>a common home for all relative filename paths</dd>
+    <dd>(optional) a common home for all relative filename paths</dd>
 
     <dt><code>global-success-patter</code></dt>
     <dd>success regexp to apply to all filenames that don't have their own success criteria.</dd>

@@ -12,7 +12,7 @@ class Status(object):
 
     def __init__(self):
         self._filenames = []
-        self._success_pattern = None
+        self._success_patterns = {}
         self._new_age_seconds = 3
         self._young_age_seconds = 10
 
@@ -25,7 +25,7 @@ class Status(object):
     def add_filename(self, filename, success_pattern_string=None):
         self._filenames.append(filename)
         if success_pattern_string:
-            self._success_pattern = re.compile(success_pattern_string);
+            self._success_patterns[filename] = re.compile(success_pattern_string, re.MULTILINE);
 
     def get_statuses(self):
         statuses = {}
@@ -67,16 +67,18 @@ class Status(object):
         status['state'] = state
 
     def _file_is_success(self, filename):
-        if not self._success_pattern:
+        if filename not in self._success_patterns:
             return True
 
+        pattern = self._success_patterns[filename]
         is_success = False
         with open(filename, 'r') as f:
             while True:
                 line = f.readline()
                 if not line:
                     break
-                if self._success_pattern.match(line):
+                line = line.rstrip()
+                if pattern.search(line):
                     is_success = True
                     break
 

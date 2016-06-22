@@ -18,7 +18,7 @@ from runtime import Runtime
 from fileage import command
 
 if __name__ == "__main__":
-    exit_status = Runtime.run_command(command.Watch, project_home)
+    exit_status = Runtime.run_command(command.Watch, project_home, os.getcwd())
     exit(exit_status)
 
 

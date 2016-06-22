@@ -14,14 +14,14 @@ class Runtime:
     """
 
     @staticmethod
-    def run_command(CommandClass, deployment_home):
+    def run_command(CommandClass, deployment_home, cwd):
         """
         Create a runtime and run an instance of the @CommandClass with it.
 
         @param deployment_home - locates our configuration in `deployment_home`/config/<env-name>.ini`.
         See configuration.py.
         """
-        runtime = Runtime.build_default(deployment_home, [CommandClass])
+        runtime = Runtime.build_default(deployment_home, cwd, [CommandClass])
         runtime.start()
 
         runtime.log.set_script_abbrev(CommandClass.SCRIPT_ABBREV)
@@ -38,7 +38,7 @@ class Runtime:
         return exit_status
 
     @staticmethod
-    def run_commands(CommandClasses, deployment_home):
+    def run_commands(CommandClasses, deployment_home, cwd):
         """
         Create a runtime and run a series of Commands, assuming the
         first's arguments match all others.
@@ -95,7 +95,7 @@ class Runtime:
                                 choices=allowed_log_levels)
 
     @staticmethod
-    def build_default(deployment_home, CommandClasses):
+    def build_default(deployment_home, cwd, CommandClasses):
         """
         Create a runtime from the command line arguments and configuration on
         disk.
@@ -126,6 +126,10 @@ class Runtime:
 
         config = Config()
         config.set_options(options)
+        config.set_cwd(cwd)
+        if hasattr(CommandClass, 'DOTFILE_NAME'):
+            config.set_dotfile_name(CommandClass.DOTFILE_NAME)
+
         try:
             config.read()
         except Exception as e:
@@ -139,6 +143,7 @@ class Runtime:
         runtime.set_options(options)
         runtime.set_config(config)
         runtime.set_log(log)
+        runtime.set_cwd(cwd)
 
         return runtime
 
@@ -151,6 +156,7 @@ class Runtime:
         self.options = None
         self.config = None
         self.log = None
+        self.cwd = None
         self.cluster_database = None
         self.facebook_database = None
         self.ownership_factory = None
@@ -164,6 +170,9 @@ class Runtime:
 
     def set_log(self, log):
         self.log = log
+
+    def set_cwd(self, cwd):
+        self.cwd = cwd
 
     def each_service_class(self):
         for alias, ServiceClass in self._service_classes.iteritems():

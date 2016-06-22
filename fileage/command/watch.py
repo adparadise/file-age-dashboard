@@ -12,6 +12,7 @@ from fileage import Status
 class Watch:
     SCRIPT_ABBREV = 'dash'
     CONFIG_SECTION_NAME = 'fileage'
+    DOTFILE_NAME = '.fileage'
 
     def __init__(self):
         self._dashboard = None
@@ -90,6 +91,8 @@ class Watch:
         filename_prefix = None
         if runtime.config.has_option(Watch.CONFIG_SECTION_NAME, 'filename-prefix'):
             filename_prefix = runtime.config.get(Watch.CONFIG_SECTION_NAME, 'filename-prefix')
+        elif runtime.config.dotfile_dirname:
+            filename_prefix = runtime.config.dotfile_dirname
 
         watch_files = []
         for key, value in runtime.config.each_in_section(Watch.CONFIG_SECTION_NAME):
